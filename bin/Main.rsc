@@ -15,6 +15,11 @@ anno str node@class;
 
 loc baseLoc = |https://github.com|;
 
+// @TODO Next button
+// @TODO Major / minor releases
+// @TODO handle repo links from csv input
+// @TODO handle collapsed
+
 public void testMethod(str testlink){
 	str repo = normalizeLink(testlink);
 	int noReleases = numberOfReleases(repo);
@@ -44,6 +49,8 @@ public str normalizeLink(str githubLink){
 	}
 }
 
+//minor releases
+//8 months ago  - jedis-2.2.1 …
 public lrel[str,str] releases(str repo){
 
 	loc url = baseLoc + repo + "/releases";
@@ -71,6 +78,52 @@ public lrel[str,str] releases(str repo){
 	return information;
 }
 
+//major releases
+//jedis-2.2.0 - v2.2.0 Jonathan Leibiusky xetorthio released this 8 months ago ·
+
+public lrel[str,str] majorReleases(str repo){
+
+	loc url = baseLoc + repo + "/releases";
+	lrel[str,str] releases = [];
+	println(url);
+	node html = readHTMLFile(url);
+	visit(html){
+		case release:"div"(release_info):
+		 if((release@class ? "") == "release label-latest" || (release@class ? "") == "release label-"){
+			releases += majorRelease(release);
+		}
+		
+	}
+	return releases;
+}
+
+public lrel[str,str] majorRelease(node release){
+ str release_info = "";
+ str date_info = "";
+	visit(release){
+		case header:"h1"(header_info): if((header@class ? "") == "release-title"){ 
+			visit(header){
+				case headerText:"text"(release_header): {
+					release_info = release_header;
+				}
+			}
+		}
+		case authorship:"p"(author_info): if((authorship@class ? "") == "release-authorship"){
+			int i = 0;
+			visit(authorship){
+				case text:"text"(date):{
+					i = i + 1;
+					if(i == 3){
+						date_info = date;
+					}
+				}
+			}
+		}
+	}	
+	lrel[str,str] list_rel = [] + <release_info, date_info>;
+	return list_rel;
+}	
+			
 public str getDate(node nod){
 	visit(nod){
 		case text:"text"(date_release):{
@@ -88,7 +141,7 @@ public str getReleaseTag(node nod){
 			visit(l2){
 				case release_tag:"text"(release):{											
 				rel_tag = release;
-				//empty text tags appear n 
+				//empty text tags appear in html source
 					if(rel_tag != " "){
 	  					return rel_tag;
 	  				}
