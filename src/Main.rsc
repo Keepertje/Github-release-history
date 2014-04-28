@@ -2,10 +2,12 @@ module Main
 
 import IO;
 import lang::html::IO;
+import lang::csv::IO;
 import String;
 import Type;
 import List;
 import Relation;
+import Set;
 import util::Math;
 import ListRelation;
 
@@ -17,8 +19,14 @@ anno str node@class;
 str baseLoc = "https://github.com";
 
 // @TODO handle repo links from csv input
+public void main(loc csvLocation = |file:///Users/Cindy/Documents/Github/Github-release-history/testInput.csv|){
+	input = readCSV(#rel[str api, str projectName],csvLocation);
+	mapper(input.api, testMethod);
 
-public void testMethod(str testlink){// = "http://www.api.github.com/repos/xetorthio/jedis"){
+
+}
+
+public bool testMethod(str testlink){// = "http://www.api.github.com/repos/xetorthio/jedis"){
 	str link = normalizeLink(testlink);
 	int noReleases = numberOfReleases(link);
 	println(noReleases);
@@ -27,12 +35,14 @@ public void testMethod(str testlink){// = "http://www.api.github.com/repos/xetor
 		lrel[str,str] releases = releases(repo, "/releases") + 
 			majorReleases(repo, "/releases") + nextButton(repo, "/releases");
 			
+		println(link);
 		println(releases);
-		println(size(releases));
 		println(size(releases) == noReleases);
+		return(size(releases) == noReleases);
 	}
 	else{
-		println("No releases available on Github");
+		println("No releases available on Github for " + link);
+		return(true);
 	}	
 }
 
@@ -125,12 +135,12 @@ public lrel[str,str] releases(str repo, str add){
 public lrel[str,str] majorReleases(str repo, str add){
 
 	loc url = toLocation(repo + add);
-	println("major releases " + repo + add);
 	lrel[str,str] releases = [];
 	node html = readHTMLFile(url);
 	visit(html){
 		case release:"div"(release_info):
-		 if((release@class ? "") == "release label-latest" || (release@class ? "") == "release label-"){
+		 if((release@class ? "") == "release label-latest" || (release@class ? "") == "release label-"
+		 	|| (release@class ? "") == "release label-prerelease"){
 			releases += majorRelease(release);
 		}
 		
@@ -146,6 +156,7 @@ public lrel[str,str] majorRelease(node release){
 		case header:"h1"(header_info): if((header@class ? "") == "release-title"){ 
 			visit(header){
 				case headerText:"text"(release_header): {
+					println(release_header);
 					release_info = release_header;
 				}
 			}
