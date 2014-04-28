@@ -6,6 +6,7 @@ import String;
 import Type;
 import List;
 import Relation;
+import util::Math;
 import ListRelation;
 
 anno str node@id;
@@ -13,27 +14,61 @@ anno str node@href;
 anno str node@class;
 
 
-loc baseLoc = |https://github.com|;
+str baseLoc = "https://github.com";
 
-// @TODO Next button
-// @TODO Major / minor releases
 // @TODO handle repo links from csv input
-// @TODO handle collapsed
 
-public void testMethod(str testlink){
-	str repo = normalizeLink(testlink);
-	int noReleases = numberOfReleases(repo);
+public void testMethod(str testlink){// = "http://www.api.github.com/repos/xetorthio/jedis"){
+	str link = normalizeLink(testlink);
+	int noReleases = numberOfReleases(link);
 	println(noReleases);
 	if(noReleases > 0){
-		lrel[str,str] releases = releases(repo);
+		str repo = baseLoc + link;
+		lrel[str,str] releases = releases(repo, "/releases") + 
+			majorReleases(repo, "/releases") + nextButton(repo, "/releases");
+			
 		println(releases);
+		println(size(releases));
+		println(size(releases) == noReleases);
 	}
 	else{
 		println("No releases available on Github");
 	}	
 }
 
-
+public lrel[str,str] nextButton(str repo, str added){
+	loc url = toLocation(repo + added);
+	node html = readHTMLFile(url);
+	lrel[str,str] information = [];
+	visit(html){
+		case page:"div"(pages): if((page@class ? "") == "pagination"){
+			visit(page){
+				case span:"span"(dis_button): if((span@class ? "") == "disabled"){
+					visit(span){
+						case text:"text"(button):{
+							if(button == "Next »"){
+							 	println("End of releases");
+							 	return [];
+							}						
+						}
+					}
+				}
+				case link:"a"(next_page):{
+					visit(link){
+						case txt:"text"(button):{
+							if(button == "Next »"){
+								str nextpage = "/releases" + normalizeLink(link@href);
+								information += releases(repo, nextpage) + majorReleases(repo,nextpage);
+								information += nextButton(repo, nextpage);
+							}
+						}
+					}
+				} 
+			}
+		}
+	}
+	return information;
+}
 /*
 	Input format:	
 	https://api.github.com/repos/cargomedia/jquery.touchToClick 
@@ -44,17 +79,21 @@ public str normalizeLink(str githubLink){
 	if(/.*repos<rest:.*>/ := githubLink){
 		return rest;
 	}
+	else if(/.*releases<rest:.*>/ := githubLink){
+		return rest;
+	}
 	else{
 		return "";
 	}
 }
 
+
 //minor releases
 //8 months ago  - jedis-2.2.1 …
-public lrel[str,str] releases(str repo){
-
-	loc url = baseLoc + repo + "/releases";
+public lrel[str,str] releases(str repo, str add){
 	
+	loc url = toLocation(repo + add);
+
 	node html = readHTMLFile(url);
 	lrel[str,str] information = [];
 	
@@ -75,17 +114,19 @@ public lrel[str,str] releases(str repo){
 			}
 		}
 	}
+	
+	println(toString(size(information)) + " minor releases");
 	return information;
 }
 
 //major releases
 //jedis-2.2.0 - v2.2.0 Jonathan Leibiusky xetorthio released this 8 months ago ·
 
-public lrel[str,str] majorReleases(str repo){
+public lrel[str,str] majorReleases(str repo, str add){
 
-	loc url = baseLoc + repo + "/releases";
+	loc url = toLocation(repo + add);
+	println("major releases " + repo + add);
 	lrel[str,str] releases = [];
-	println(url);
 	node html = readHTMLFile(url);
 	visit(html){
 		case release:"div"(release_info):
@@ -94,6 +135,7 @@ public lrel[str,str] majorReleases(str repo){
 		}
 		
 	}
+	println(toString(size(releases)) + " major releases");
 	return releases;
 }
 
@@ -153,15 +195,16 @@ public str getReleaseTag(node nod){
 
 public int numberOfReleases(str repo){
 	
-	loc url = baseLoc + repo;
+	loc url = toLocation(baseLoc + repo);
+	println(url);
 	node html = readHTMLFile(url);
 	visit(html){
 		case link:"a"(link_release): if((link@href ? "") == (repo + "/releases")){
 	 		visit(link){
 	 			case span:"span"(span_input): if((span@class ? "") == "num"){
 					visit(span){
-						case txt:"text"(bla):{
-							return toInt(replaceAll(bla," ",""));
+						case txt:"text"(inhoudt):{
+							return toInt(replaceAll(inhoudt," ",""));
 						}
 					}
 				}
