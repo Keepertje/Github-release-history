@@ -6,6 +6,7 @@ import lang::csv::IO;
 import String;
 import Type;
 import List;
+import Exception;
 import Relation;
 import Set;
 import util::Math;
@@ -21,12 +22,13 @@ str baseLoc = "https://github.com";
 // @TODO handle repo links from csv input
 public void main(loc csvLocation = |file:///Users/Cindy/Documents/Github/Github-release-history/testInput.csv|){
 	input = readCSV(#rel[str api, str projectName],csvLocation);
-	mapper(input.api, testMethod);
+	output = mapper(input.api, testMethod);
+	println(output);
 
 
 }
 
-public bool testMethod(str testlink){// = "http://www.api.github.com/repos/xetorthio/jedis"){
+public lrel[str,str] testMethod(str testlink){// = "http://www.api.github.com/repos/xetorthio/jedis"){
 	str link = normalizeLink(testlink);
 	int noReleases = numberOfReleases(link);
 	println(noReleases);
@@ -38,11 +40,17 @@ public bool testMethod(str testlink){// = "http://www.api.github.com/repos/xetor
 		println(link);
 		println(releases);
 		println(size(releases) == noReleases);
-		return(size(releases) == noReleases);
+		rel[str date, str version] allReleases = toSet(releases);
+		loc write = |file:///Users/Cindy/Documents/Github/Github-release-history/|;
+		
+		str name = replaceAll(link,"/","-") + ".csv";
+		write = write + "csvfiles/" + name;
+		writeCSV(allReleases, write);
+		return(releases);
 	}
 	else{
 		println("No releases available on Github for " + link);
-		return(true);
+		return([]);
 	}	
 }
 
@@ -118,7 +126,7 @@ public lrel[str,str] releases(str repo, str add){
 				}
 				case div:"div"(infos): if((div@class ? "") == "main"){
 					rel_tag = getReleaseTag(div);	
-					relation = <date,rel_tag>;
+					relation = <rel_tag,date>;
 					information += relation;
 				}	
 			}
@@ -156,7 +164,7 @@ public lrel[str,str] majorRelease(node release){
 		case header:"h1"(header_info): if((header@class ? "") == "release-title"){ 
 			visit(header){
 				case headerText:"text"(release_header): {
-					println(release_header);
+					//println(release_header);
 					release_info = release_header;
 				}
 			}
@@ -205,10 +213,12 @@ public str getReleaseTag(node nod){
 }
 
 public int numberOfReleases(str repo){
-	
 	loc url = toLocation(baseLoc + repo);
 	println(url);
-	node html = readHTMLFile(url);
+	
+	try node html = readHTMLFile(url);
+	catch: return 0;
+	
 	visit(html){
 		case link:"a"(link_release): if((link@href ? "") == (repo + "/releases")){
 	 		visit(link){
