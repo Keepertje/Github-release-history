@@ -20,31 +20,36 @@ anno str node@class;
 str baseLoc = "https://github.com";
 
 // @TODO handle repo links from csv input
-public void main(loc csvLocation = |file:///Users/Cindy/Documents/Github/Github-release-history/testInput.csv|){
-	input = readCSV(#rel[str api, str projectName],csvLocation);
-	output = mapper(input.api, testMethod);
-	println(output);
+public void main(loc csvLocation = |file:///Users/Cindy/Documents/Github/Github-release-history/input.csv|){
+	lrel[str,str] input = toList(readCSV(#rel[str api, str projectName],csvLocation));
+	for(int n <- [0..(size(input)-1)] ){
+		testMethod(input[n]);
+	}
+	//output = mapper(input.api, testMethod);
+	//println(output);
 
 
 }
 
-public lrel[str,str] testMethod(str testlink){// = "http://www.api.github.com/repos/xetorthio/jedis"){
+public lrel[str,str] testMethod(tuple[str,str] input_project){// = "http://www.api.github.com/repos/xetorthio/jedis"){
+	tuple[str api, str name] project = input_project;
+	str testlink = project.api;
 	str link = normalizeLink(testlink);
 	int noReleases = numberOfReleases(link);
-	println(noReleases);
+	println(testlink + " "  +toString(noReleases));
 	if(noReleases > 0){
 		str repo = baseLoc + link;
 		lrel[str,str] releases = releases(repo, "/releases") + 
 			majorReleases(repo, "/releases") + nextButton(repo, "/releases");
 			
-		println(link);
-		println(releases);
-		println(size(releases) == noReleases);
+		//println(link);
+		//println(releases);
+		//println(size(releases) == noReleases);
 		rel[str date, str version] allReleases = toSet(releases);
 		loc write = |file:///Users/Cindy/Documents/Github/Github-release-history/|;
 		
-		str name = replaceAll(link,"/","-") + ".csv";
-		write = write + "csvfiles/" + name;
+		str csv_name = project.name + ".csv";
+		write = write + "csvfiles/" + csv_name;
 		writeCSV(allReleases, write);
 		return(releases);
 	}
