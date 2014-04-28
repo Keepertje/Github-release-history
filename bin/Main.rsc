@@ -230,7 +230,8 @@ public int numberOfReleases(str repo){
 	 			case span:"span"(span_input): if((span@class ? "") == "num"){
 					visit(span){
 						case txt:"text"(inhoudt):{
-							return toInt(replaceAll(inhoudt," ",""));
+							str number = replaceAll(replaceAll(inhoudt,",","")," ","");
+							return toInt(number);
 						}
 					}
 				}
