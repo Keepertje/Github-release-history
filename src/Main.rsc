@@ -9,13 +9,14 @@ import List;
 import Exception;
 import Relation;
 import Set;
+import Map;
 import util::Math;
 import ListRelation;
 
 anno str node@id;
 anno str node@href;
 anno str node@class;
-
+//fubumvc, monodevelop (60)
 
 str baseLoc = "https://github.com";
 
@@ -23,6 +24,7 @@ str baseLoc = "https://github.com";
 public void main(loc csvLocation = |file:///Users/Cindy/Documents/Github/Github-release-history/input.csv|){
 	lrel[str,str] input = toList(readCSV(#rel[str api, str projectName],csvLocation));
 	for(int n <- [0..(size(input)-1)] ){
+		println(n);
 		testMethod(input[n]);
 	}
 	//output = mapper(input.api, testMethod);
@@ -40,7 +42,7 @@ public lrel[str,str] testMethod(tuple[str,str] input_project){// = "http://www.a
 	if(noReleases > 0){
 		str repo = baseLoc + link;
 		lrel[str,str] releases = releases(repo, "/releases") + 
-			majorReleases(repo, "/releases") + nextButton(repo, "/releases");
+			majorReleases(repo, "/releases") + nextButton(repo, "/releases",[]);
 			
 		//println(link);
 		//println(releases);
@@ -59,7 +61,7 @@ public lrel[str,str] testMethod(tuple[str,str] input_project){// = "http://www.a
 	}	
 }
 
-public lrel[str,str] nextButton(str repo, str added){
+public lrel[str,str] nextButton(str repo, str added, list[str] links){
 	loc url = toLocation(repo + added);
 	node html = readHTMLFile(url);
 	lrel[str,str] information = [];
@@ -81,8 +83,15 @@ public lrel[str,str] nextButton(str repo, str added){
 						case txt:"text"(button):{
 							if(button == "Next »"){
 								str nextpage = "/releases" + normalizeLink(link@href);
-								information += releases(repo, nextpage) + majorReleases(repo,nextpage);
-								information += nextButton(repo, nextpage);
+								println(nextpage);
+								if(nextpage in links){
+									return [];
+								}
+								else{
+									links = links + nextpage;
+									information += releases(repo, nextpage) + majorReleases(repo,nextpage);
+									information += nextButton(repo, nextpage,links);
+								}
 							}
 						}
 					}
@@ -180,7 +189,7 @@ public lrel[str,str] majorRelease(node release){
 				case text:"text"(date):{
 					i = i + 1;
 					if(i == 3){
-						date_info = date;
+						date_info = toDate(date);
 					}
 				}
 			}
@@ -194,8 +203,8 @@ public str getDate(node nod){
 	visit(nod){
 		case text:"text"(date_release):{
 			date = date_release;
-			if(date != " "){
-	  			return date;
+			if(date != " "  && date != "Since "){
+	  			return toDate(date);
 			}
 		}
 	}
@@ -239,4 +248,19 @@ public int numberOfReleases(str repo){
 		}
 	}
 	return 0;
+}
+
+public str toDate(str date){
+
+	str d = replaceAll(date,",","");
+	list[str] splitted = split(" ",d);
+	list[str] neat = []+splitted[2] + MonthToNumber(splitted[0]) + splitted[1];
+	
+	return intercalate("-",neat);
+
+}
+
+public str MonthToNumber(str month){
+	map[str,str] months = ("January":"01", "February":"02","March":"03","April":"04","May":"05","June":"06","July":"07","August":"08","September":"09","October":"10","November":"11","December":"12");
+	return(months[month]);
 }
