@@ -139,9 +139,19 @@ public lrel[str,str] releases(str repo, str add){
 					date = getDate(time);
 				}
 				case div:"div"(infos): if((div@class ? "") == "main"){
-					rel_tag = getReleaseTag(div);	
-					relation = <rel_tag,date>;
-					information += relation;
+					if( /<major:[0-9]+>_<minor:[0-9]+>(\.<patch:[0-9]>)?.*$/ := getReleaseTag(div)){
+						//println(getReleaseTag(div));
+						rel_tag = major + "." + minor; 
+						relation = <rel_tag,date>;
+						information += relation;
+					}
+					else if( /<major:[0-9]+>\.<minor:[0-9]+>(\.<patch:[0-9]>)?.*$/ := getReleaseTag(div)){
+						//println(getReleaseTag(div));
+						rel_tag = major + "." + minor; 
+						relation = <rel_tag,date>;
+						information += relation;
+					}
+				//	rel_tag = "Version " + getReleaseTag(div);	
 				}	
 			}
 		}
@@ -179,7 +189,15 @@ public lrel[str,str] majorRelease(node release){
 			visit(header){
 				case headerText:"text"(release_header): {
 					//println(release_header);
-					release_info = release_header;
+					if(/<major:[0-9]+>\.<minor:[0-9]+>.*/ := release_header){
+						//println(release_header);
+					   release_info = major + "." + minor;
+					//release_info = release_header;
+					}
+					else if(/<major:[0-9]+>_<minor:[0-9]+>.*/ := release_header){
+					//	println(release_header);
+					   release_info = major + "." + minor;
+					}
 				}
 			}
 		}
