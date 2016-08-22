@@ -1,4 +1,4 @@
 Github-release-history
 ======================
 
-Rascal program to gather Release history from github projects
+Rascal program to scrape Release history from github projects
